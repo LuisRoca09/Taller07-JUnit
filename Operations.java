@@ -1,94 +1,77 @@
 import java.util.Stack;
-/**
- *
- * @author Djurado
- */
+
 public class Operations {
+    private static String[] op = { "+", "-", "*", "/" }; // Operadores
 
-    private static String[] op = { "+", "-", "*", "/" };// Operation set
-
-    public static String MakeFormula(){
-        System.out.println("git modify");
+    public static String MakeFormula() {
         StringBuilder build = new StringBuilder();
-        int count = (int) (Math.random() * 2) + 1; // generate random count
-        int start = 0;
+        int count = (int) (Math.random() * 2) + 1; // Generar cantidad aleatoria de operaciones
         int number1 = (int) (Math.random() * 99) + 1;
         build.append(number1);
-        while (start <= count){
-            int operation = (int) (Math.random() * 3); // generate operator
+
+        for (int i = 0; i < count; i++) {
+            int operation = (int) (Math.random() * 4); // Selección de operador
             int number2 = (int) (Math.random() * 99) + 1;
             build.append(op[operation]).append(number2);
-            start ++;
         }
         return build.toString();
     }
 
-    public static String Solve(String formula){
-        Stack<String> tempStack = new Stack<>();//Store number or operator
-        Stack<Character> operatorStack = new Stack<Character>();//Store operator
+    public static String Solve(String formula) throws ArithmeticException {
+        Stack<String> tempStack = new Stack<>();
+        Stack<Character> operatorStack = new Stack<>();
+
         int len = formula.length();
         int k = 0;
-        for(int j = -1; j < len - 1; j++){
+        for (int j = -1; j < len - 1; j++) {
             char formulaChar = formula.charAt(j + 1);
-            if(j == len - 2 || formulaChar == '+' || formulaChar == '-' || formulaChar == '/' || formulaChar == '*') {
+            if (j == len - 2 || "+-*/".indexOf(formulaChar) != -1) {
                 if (j == len - 2) {
                     tempStack.push(formula.substring(k));
-                }
-                else {
-                    if(k < j){
+                } else {
+                    if (k < j) {
                         tempStack.push(formula.substring(k, j + 1));
                     }
-                    if(operatorStack.empty()){
-                        operatorStack.push(formulaChar); //if operatorStack is empty, store it
-                    }else{
-                        char stackChar = operatorStack.peek();
-                        if ((stackChar == '+' || stackChar == '-')
-                                && (formulaChar == '*' || formulaChar == '/')){
-                            operatorStack.push(formulaChar);
-                        }else {
-                            tempStack.push(operatorStack.pop().toString());
-                            operatorStack.push(formulaChar);
-                        }
+                    while (!operatorStack.isEmpty() && precedence(operatorStack.peek()) >= precedence(formulaChar)) {
+                        tempStack.push(String.valueOf(operatorStack.pop()));
                     }
+                    operatorStack.push(formulaChar);
                 }
                 k = j + 2;
             }
         }
-        while (!operatorStack.empty()){ // Append remaining operators
-            tempStack.push(operatorStack.pop().toString());
+
+        while (!operatorStack.isEmpty()) {
+            tempStack.push(String.valueOf(operatorStack.pop()));
         }
+
         Stack<String> calcStack = new Stack<>();
-        for(String peekChar : tempStack){ // Reverse traversing of stack
-            if(!peekChar.equals("+") && !peekChar.equals("-") && !peekChar.equals("/") && !peekChar.equals("*")) {
-                calcStack.push(peekChar); // Push number to stack
-            }else{
-                int a1 = 0;
-                int b1 = 0;
-                if(!calcStack.empty()){
-                    b1 = Integer.parseInt(calcStack.pop());
-                }
-                if(!calcStack.empty()){
-                    a1 = Integer.parseInt(calcStack.pop());
-                }
-                switch (peekChar) {
-                    case "+":
-                        calcStack.push(String.valueOf(a1 + b1));
-                        break;
-                    case "-":
-                        calcStack.push(String.valueOf(a1 - b1));
-                        break;
-                    case "*":
-                        calcStack.push(String.valueOf(a1 * b1));
-                        break;
-                    default:
-                        calcStack.push(String.valueOf(a1 / b1));
-                        break;
-                }
+        for (String token : tempStack) {
+            if (!"+-*/".contains(token)) {
+                calcStack.push(token);
+            } else {
+                int b = Integer.parseInt(calcStack.pop());
+                int a = Integer.parseInt(calcStack.pop());
+                calcStack.push(String.valueOf(applyOperation(a, b, token)));
             }
         }
+
         return formula + "=" + calcStack.pop();
     }
 
+    private static int precedence(char operator) {
+        return (operator == '+' || operator == '-') ? 1 : 2;
+    }
 
-
+    private static int applyOperation(int a, int b, String op) {
+        switch (op) {
+            case "+": return a + b;
+            case "-": return a - b;
+            case "*": return a * b;
+            case "/": 
+                if (b == 0) throw new ArithmeticException("División por cero");
+                return a / b;
+            default: throw new IllegalArgumentException("Operador desconocido: " + op);
+        }
+    }
 }
